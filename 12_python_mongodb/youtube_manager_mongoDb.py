@@ -1,35 +1,28 @@
-import sqlite3
+from pymongo import MongoClient
+from bson import ObjectId
 
-con = sqlite3.connect("youtube_videos.db")
+uri = "mongodb+srv://mongodb:FSbp50kVGcomBKyU@cluster0.ldbebyh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-cursor = con.cursor()
+client = MongoClient(uri)
 
-cursor.execute('''
-  CREATE TABLE IF NOT EXISTS videos (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    time TEXT NOTT NULL
-  )
-''')
-
-def list_videos():
-    cursor.execute("SELECT * FROM videos")
-    for row in cursor.fetchall():
-        print(row)
+db = client["youtube_manager"] 
+video_collection = db["videos"]
+print("✅ Connected to MongoDB!",video_collection)
 
 def add_video(name,time):
-    cursor.execute("INSERT INTO videos (name,time) VALUES (?,?)",(name,time))
-    con.commit()
+    video_collection.insert_one({"name":name,"time":time})
 
-def update_vide0(video_id,name,time):
-    cursor.execute("UPDATE videos SET name = ?, time = ? WHERE id = ?",(name,time,video_id))
-    con.commit()
+def list_videos():
+    for video in video_collection.find():
+       print(f"ID: {video['_id']}, Name: {video['name']} and Time: {video['time']}")
+
+def update_video(video_id,name,time):
+    video_collection.update_one(
+        {'_id':ObjectId(video_id)},
+        {"$set":{"name":name,"time":time}})
 
 def delete_video(video_id):
-    cursor.execute("DELETE FROM videos where id = ?",(video_id))
-    con.commit()
-
-
+    video_collection.delete_one({"_id":ObjectId(video_id)})
 
 def main():
     while True:
@@ -40,7 +33,7 @@ def main():
         print("4. Delete a youtube video ")
         print("5. Exit the app ")
         choice = input("Enter your choice: ")
-        
+
         if choice == '1':
             list_videos()
         elif choice == '2':
@@ -51,7 +44,7 @@ def main():
             video_id = input("Enter video ID to update:")
             name = input("Enter the video name: ")
             time = input("Enter the video time: ")
-            update_vide0(video_id,name,time)
+            update_video(video_id,name,time)
         elif choice == '4':
             video_id = input("Enter video Id to delete")
             delete_video(video_id)
@@ -60,8 +53,6 @@ def main():
         else:
             print("Invalid Choice")
 
-    con.close()
-        
 
 if __name__ == "__main__":
     main()
